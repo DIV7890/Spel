@@ -27,15 +27,34 @@ CLOCK = pg.time.Clock()
 background = pg.transform.scale(pg.image.load("room_test.png"), screen_size)
 screen = pg.display.set_mode(screen_size)
 
+Objects = []
+
 
 class StaticObstacle(pg.sprite.Sprite):
 	def __init__(self,pos,size,groups,colour):
 		super().__init__(groups)
+		self.pos = pos
+		self.size = size
 		self.colour = colour
 		self.image = pg.Surface(size, pg.SRCALPHA)
 		self.image.fill(self.colour)
 		self.rect = self.image.get_rect(topleft=pos)
 		self.old_rect = self.rect.copy()
+
+		Objects.append(self)
+
+	def update(self,dt):
+		self.image = pg.Surface(self.size, pg.SRCALPHA)
+		self.image.fill(self.colour)
+		self.rect = self.image.get_rect(topleft=self.pos)
+		self.old_rect = self.rect.copy()
+		screen.blit(self.image, self.rect)
+
+	def remove(self):
+		if self in Objects:
+			Objects.remove(self)
+
+
 
 
 class MovingVerticalObstacle(StaticObstacle):
@@ -88,6 +107,8 @@ class Player(pg.sprite.Sprite):
 	def __init__(self,groups,obstacles,players,width,height,image):
 		super().__init__(groups)
 
+		Objects.append(self)
+
 		# image
 		self.image = pg.Surface((width,height))
 		image = pg.image.load(image).convert()  # Adjust the path to your image
@@ -108,33 +129,29 @@ class Player(pg.sprite.Sprite):
 		self.players = players  # Add reference to other players
 
 	def collision(self,direction):
-		collision_sprites = pg.sprite.spritecollide(self,self.obstacles,False)
-		collision_players = pg.sprite.spritecollide(self, self.players, False)  # Check collision with other players
-		collision_sprites.extend(collision_players)  # Combine collision lists
-
 		if collision_sprites:
 			if direction == 'horizontal':
-				for sprite in collision_sprites:
+				for o in Objects:
 					# collision on the right
-					if self.rect.right >= sprite.rect.left and self.old_rect.right <= sprite.old_rect.left:
-						self.rect.right = sprite.rect.left
+					if self.rect.right >= o.rect.left and self.old_rect.right <= o.old_rect.left:
+						self.rect.right = o.rect.left
 						self.pos.x = self.rect.x
 
 					# collision on the left
-					if self.rect.left <= sprite.rect.right and self.old_rect.left >= sprite.old_rect.right:
-						self.rect.left = sprite.rect.right
+					if self.rect.left <= o.rect.right and self.old_rect.left >= o.old_rect.right:
+						self.rect.left = o.rect.right
 						self.pos.x = self.rect.x
 
 			if direction == 'vertical':
-				for sprite in collision_sprites:
+				for o in Objects:
 					# collision on the bottom
-					if self.rect.bottom >= sprite.rect.top and self.old_rect.bottom <= sprite.old_rect.top:
-						self.rect.bottom = sprite.rect.top
+					if self.rect.bottom >= o.rect.top and self.old_rect.bottom <= o.old_rect.top:
+						self.rect.bottom = o.rect.top
 						self.pos.y = self.rect.y
 
 					# collision on the top
-					if self.rect.top <= sprite.rect.bottom and self.old_rect.top >= sprite.old_rect.bottom:
-						self.rect.top = sprite.rect.bottom
+					if self.rect.top <= o.rect.bottom and self.old_rect.top >= o.old_rect.bottom:
+						self.rect.top = o.rect.bottom
 						self.pos.y = self.rect.y
 
 	def update(self,dt):
@@ -149,6 +166,12 @@ class Player(pg.sprite.Sprite):
 		self.pos.y += self.direction.y * self.speed * dt
 		self.rect.y = round(self.pos.y)
 		self.collision('vertical')
+
+		screen.blit(self.image, self.rect)
+
+	def remove(self):
+		if self in Objects:
+			Objects.remove(self)
 
 def input():
 	keys = pg.key.get_pressed()
@@ -183,6 +206,9 @@ def input():
 	else:
 		player2.direction.x = 0
 
+	if keys[pg.K_e]:
+		player1.remove()
+
 # group setup
 all_sprites = pg.sprite.Group()
 collision_sprites = pg.sprite.Group()
@@ -191,30 +217,30 @@ player_sprites = pg.sprite.Group()  # Group for players
 # sprite setup
 def create_room_bounderies():
 	# Left Wall
-	StaticObstacle((0, 0), (0.042 * screen_width, screen_height), [all_sprites, collision_sprites], transparent)
+	StaticObstacle((0, 0), (0.042 * screen_width, screen_height), [all_sprites, collision_sprites], red)
 
 	# Right Wall
 	StaticObstacle((screen_width - 0.041 * screen_width, 0), (0.042 * screen_width, screen_height),
-				   [all_sprites, collision_sprites], transparent)
+				   [all_sprites, collision_sprites], red)
 
 	# Bottom Wall
 	StaticObstacle((0, screen_height - 0.034 * screen_height), (screen_width, 0.034 * screen_height),
-				   [all_sprites, collision_sprites], transparent)
+				   [all_sprites, collision_sprites], red)
 
 	# Top left Wall
 	StaticObstacle((0, 0), (screen_width / 2 - screen_width * 0.033, 0.19 * screen_height),
-				   [all_sprites, collision_sprites], transparent)
+				   [all_sprites, collision_sprites], red)
 
 	# Top Right Wall
 	StaticObstacle((screen_width / 2 + screen_width * 0.033, 0),
 				   (screen_width / 2 - screen_width * 0.033, 0.19 * screen_height), [all_sprites, collision_sprites],
-				   transparent)
+				   red)
 
 	# Door boundery
-	StaticObstacle((0, 0), (screen_width, 0.16 * screen_height), [all_sprites, collision_sprites], transparent)
+	StaticObstacle((0, 0), (screen_width, 0.16 * screen_height), [all_sprites, collision_sprites], red)
 
 
-create_room_bounderies()
+
 player1 = Player(all_sprites,collision_sprites,player_sprites, 1.5 * 0.0234 * screen_width, 2 * 0.042 * screen_height,"player.png")
 player2 = Player(all_sprites,collision_sprites,player_sprites, 1.5 * 0.0234 * screen_width, 2 * 0.042 * screen_height,"player.png")
 
@@ -237,9 +263,9 @@ while True:
 			sys.exit()
 
 	# drawing and updating the screen
-	WINDOW.blit(background, (0, 0))
-	all_sprites.update(dt)
-	all_sprites.draw(screen)
+	WINDOW.blit(background, (0,0))
+	for o in Objects:
+		o.update(dt)
 
 
 	# display output

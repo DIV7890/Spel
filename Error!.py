@@ -45,7 +45,9 @@ class Object:
     def check_for_collissions(self):
         for o in objects:
             if  self.area[0][0] >= o.position[0] >= self.area[0][1] and self.area[1][0] >= o.position[1] >= self.area[1][1]:
-                print("colliding")
+                self.directionADWS = [False, False, False, False]
+                self.velocity[0] = self.velocity[0] * -1
+                self.velocity[1] = self.velocity[1] * -1
 
     def draw(self):
         self.position = [(self.x + self.width / 2), (self.y - self.height / 2)]
@@ -108,19 +110,12 @@ class Entity(Object):
                 pass
             else:
                 if self.area[0][0] >= o.position[0] >= self.area[0][1] and self.area[1][0] >= o.position[1] >= self.area[1][1]:
-                    if (self.position[0] - self.width / 2) <= o.position[0] <= (self.position[0] + self.width / 2) and  (self.position[1] - self.height / 2 - 2) <= o.position[1] - o.height / 2 <= (self.position[1] - self.height / 2 + 2):
-                        print(self.position)
-                        self.position[1] = o.position[1] - o.height / 2 - self.speed
-                        print("Touched top side of the object")
-                        print(self.position)
-                        self.y = self.position[1] - self.height / 2
+                    print(self.velocity)
+                    self.directionADWS = [False, False, False, False]
+                    self.velocity[0] = self.velocity[0] * -1
+                    self.velocity[1] = self.velocity[1] * -1
+                    print(self.velocity)
 
-                    if (self.position[0] - self.width / 2) <= o.position[0] <= (self.position[0] + self.width / 2) and  (self.position[1] + self.height / 2 - 2) <= o.position[1] - o.height / 2 <= (self.position[1] + self.height / 2+ 2):
-                        print("Touched bottom side of the object")
-                        print(self.position)
-                        self.position[1] = o.position[1] + o.height / 2 + self.speed
-                        print(self.position)
-                        self.y = self.position[1] - self.height / 2
 
     def change_direction(self):
         if self.velocity[0] < 0:
