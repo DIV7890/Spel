@@ -1,272 +1,217 @@
-import pygame as pg
-import sys
-import time
-import pyautogui as pa
+import pygame
+import random
+import os
 
-pg.init()
+# Initialize Pygame
+pygame.init()
 
-red = (255, 0, 0)
-transparent = (0, 0, 0, 0)
+# Get display dimensions
+os.environ['SDL_VIDEO_CENTERED'] = '1'  # Center the window
+infoObject = pygame.display.Info()
+SCREEN_WIDTH = infoObject.current_w
+SCREEN_HEIGHT = infoObject.current_h
 
-screen_width, screen_height = pa.size()
-screen_size = (screen_width, screen_height)
-WINDOW_TITLE = "Error!"
+# Constants
+GAME_WIDTH = 300
+GAME_HEIGHT = 600
+SIDE_PANEL_WIDTH = 200
+BLOCK_SIZE = 30
+GRID_WIDTH = GAME_WIDTH // BLOCK_SIZE
+GRID_HEIGHT = GAME_HEIGHT // BLOCK_SIZE
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GRAY = (100, 100, 100)
+RED = (255, 0, 0)
+CYAN = (0, 255, 255)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+ORANGE = (255, 165, 0)
+YELLOW = (255, 255, 0)
+PURPLE = (128, 0, 128)
+DARK_BLUE = (0, 0, 139)
 
-HORIZONTAL = 1
-UP = 2
-DOWN = 0
+# Tetrominos
+tetrominos = [
+    [[1, 1, 1, 1]],  # I piece
+    [[2, 2, 2],
+     [0, 2, 0]],  # T piece
+    [[3, 3, 0],
+     [0, 3, 3]],  # S piece
+    [[0, 4, 4],
+     [4, 4, 0]],  # Z piece
+    [[5, 5, 5, 5]],  # L piece
+    [[6, 6],
+     [6, 6]],  # O piece
+    [[7, 7, 7],
+     [0, 0, 7]]  # J piece
+]
 
-FRAME_RATE = 60
-ANIMATION_FRAME_RATE = 8
+# Create a new window
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Tetris")
 
-WINDOW = pg.display.set_mode((screen_size))
-pg.display.set_caption(WINDOW_TITLE)
-
-CLOCK = pg.time.Clock()
-
-background = pg.transform.scale(pg.image.load("room_test.png"), screen_size)
-screen = pg.display.set_mode(screen_size)
-
-Objects = []
-
-
-class StaticObstacle(pg.sprite.Sprite):
-	def __init__(self,pos,size,groups,colour):
-		super().__init__(groups)
-		self.pos = pos
-		self.size = size
-		self.colour = colour
-		self.image = pg.Surface(size, pg.SRCALPHA)
-		self.image.fill(self.colour)
-		self.rect = self.image.get_rect(topleft=pos)
-		self.old_rect = self.rect.copy()
-
-		Objects.append(self)
-
-	def update(self,dt):
-		self.image = pg.Surface(self.size, pg.SRCALPHA)
-		self.image.fill(self.colour)
-		self.rect = self.image.get_rect(topleft=self.pos)
-		self.old_rect = self.rect.copy()
-		screen.blit(self.image, self.rect)
-
-	def remove(self):
-		if self in Objects:
-			Objects.remove(self)
-
+# Initialize clock
+clock = pygame.time.Clock()
 
 
-
-class MovingVerticalObstacle(StaticObstacle):
-	def __init__(self,pos,size,groups):
-		super().__init__(pos, size, groups)
-		self.image.fill('green')
-		self.pos = pg.math.Vector2(self.rect.topleft)
-		self.direction = pg.math.Vector2((0,1))
-		self.speed = 850
-		self.old_rect = self.rect.copy()
-
-	def update(self,dt):
-		self.old_rect = self.rect.copy() # previous frame
-		if self.rect.bottom > 600:
-			self.rect.bottom = 600
-			self.pos.y = self.rect.y
-			self.direction.y *= -1
-		if self.rect.bottom < 120:
-			self.rect.bottom = 120
-			self.pos.y = self.rect.y
-			self.direction.y *= -1
-
-		self.pos.y += self.direction.y * self.speed * dt
-		self.rect.y = round(self.pos.y) # current frame
-
-class MovingHorizontalObstacle(StaticObstacle):
-	def __init__(self,pos,size,groups):
-		super().__init__(pos, size, groups)
-		self.image.fill('purple')
-		self.pos = pg.math.Vector2(self.rect.topleft)
-		self.direction = pg.math.Vector2((1,0))
-		self.speed = 800
-		self.old_rect = self.rect.copy()
-
-	def update(self,dt):
-		self.old_rect = self.rect.copy()
-		if self.rect.right > 1000:
-			self.rect.right = 1000
-			self.pos.x = self.rect.x
-			self.direction.x *= -1
-		if self.rect.left < 600:
-			self.rect.left = 600
-			self.pos.x = self.rect.x
-			self.direction.x *= -1
-
-		self.pos.x += self.direction.x * self.speed * dt
-		self.rect.x = round(self.pos.x)
-
-class Player(pg.sprite.Sprite):
-	def __init__(self,groups,obstacles,players,width,height,image):
-		super().__init__(groups)
-
-		Objects.append(self)
-
-		# image
-		self.image = pg.Surface((width,height))
-		image = pg.image.load(image).convert()  # Adjust the path to your image
-		# Scale the image to match the size of the surface
-		image = pg.transform.scale(image, (width,height))
-		# Blit the image onto the surface
-		self.image.blit(image, (0, 0))
-
-		# position
-		self.rect = self.image.get_rect(topleft = (640,360))
-		self.old_rect = self.rect.copy()
-
-		# movement
-		self.pos = pg.math.Vector2(self.rect.topleft)
-		self.direction = pg.math.Vector2()
-		self.speed = 200
-		self.obstacles = obstacles
-		self.players = players  # Add reference to other players
-
-	def collision(self,direction):
-		if collision_sprites:
-			if direction == 'horizontal':
-				for o in Objects:
-					# collision on the right
-					if self.rect.right >= o.rect.left and self.old_rect.right <= o.old_rect.left:
-						self.rect.right = o.rect.left
-						self.pos.x = self.rect.x
-
-					# collision on the left
-					if self.rect.left <= o.rect.right and self.old_rect.left >= o.old_rect.right:
-						self.rect.left = o.rect.right
-						self.pos.x = self.rect.x
-
-			if direction == 'vertical':
-				for o in Objects:
-					# collision on the bottom
-					if self.rect.bottom >= o.rect.top and self.old_rect.bottom <= o.old_rect.top:
-						self.rect.bottom = o.rect.top
-						self.pos.y = self.rect.y
-
-					# collision on the top
-					if self.rect.top <= o.rect.bottom and self.old_rect.top >= o.old_rect.bottom:
-						self.rect.top = o.rect.bottom
-						self.pos.y = self.rect.y
-
-	def update(self,dt):
-		self.old_rect = self.rect.copy()
-
-		if self.direction.magnitude() != 0:
-			self.direction = self.direction.normalize()
-
-		self.pos.x += self.direction.x * self.speed * dt
-		self.rect.x = round(self.pos.x)
-		self.collision('horizontal')
-		self.pos.y += self.direction.y * self.speed * dt
-		self.rect.y = round(self.pos.y)
-		self.collision('vertical')
-
-		screen.blit(self.image, self.rect)
-
-	def remove(self):
-		if self in Objects:
-			Objects.remove(self)
-
-def input():
-	keys = pg.key.get_pressed()
-	if keys[pg.K_ESCAPE]:
-		exit()
-		# movement input
-	if keys[pg.K_UP]:
-		player1.direction.y = -1
-	elif keys[pg.K_DOWN]:
-		player1.direction.y = 1
-	else:
-		player1.direction.y = 0
-
-	if keys[pg.K_RIGHT]:
-		player1.direction.x = 1
-	elif keys[pg.K_LEFT]:
-		player1.direction.x = -1
-	else:
-		player1.direction.x = 0
-
-	if keys[pg.K_w]:
-		player2.direction.y = -1
-	elif keys[pg.K_s]:
-		player2.direction.y = 1
-	else:
-		player2.direction.y = 0
-
-	if keys[pg.K_d]:
-		player2.direction.x = 1
-	elif keys[pg.K_a]:
-		player2.direction.x = -1
-	else:
-		player2.direction.x = 0
-
-	if keys[pg.K_e]:
-		player1.remove()
-
-# group setup
-all_sprites = pg.sprite.Group()
-collision_sprites = pg.sprite.Group()
-player_sprites = pg.sprite.Group()  # Group for players
-
-# sprite setup
-def create_room_bounderies():
-	# Left Wall
-	StaticObstacle((0, 0), (0.042 * screen_width, screen_height), [all_sprites, collision_sprites], red)
-
-	# Right Wall
-	StaticObstacle((screen_width - 0.041 * screen_width, 0), (0.042 * screen_width, screen_height),
-				   [all_sprites, collision_sprites], red)
-
-	# Bottom Wall
-	StaticObstacle((0, screen_height - 0.034 * screen_height), (screen_width, 0.034 * screen_height),
-				   [all_sprites, collision_sprites], red)
-
-	# Top left Wall
-	StaticObstacle((0, 0), (screen_width / 2 - screen_width * 0.033, 0.19 * screen_height),
-				   [all_sprites, collision_sprites], red)
-
-	# Top Right Wall
-	StaticObstacle((screen_width / 2 + screen_width * 0.033, 0),
-				   (screen_width / 2 - screen_width * 0.033, 0.19 * screen_height), [all_sprites, collision_sprites],
-				   red)
-
-	# Door boundery
-	StaticObstacle((0, 0), (screen_width, 0.16 * screen_height), [all_sprites, collision_sprites], red)
+def draw_grid(surface, x_offset, y_offset):
+    for x in range(0, GAME_WIDTH, BLOCK_SIZE):
+        pygame.draw.line(surface, GRAY, (x + x_offset, y_offset), (x + x_offset, GAME_HEIGHT + y_offset))
+    for y in range(0, GAME_HEIGHT, BLOCK_SIZE):
+        pygame.draw.line(surface, GRAY, (x_offset, y + y_offset), (GAME_WIDTH + x_offset, y + y_offset))
 
 
-
-player1 = Player(all_sprites,collision_sprites,player_sprites, 1.5 * 0.0234 * screen_width, 2 * 0.042 * screen_height,"player.png")
-player2 = Player(all_sprites,collision_sprites,player_sprites, 1.5 * 0.0234 * screen_width, 2 * 0.042 * screen_height,"player.png")
-
-player_sprites.add(player1, player2)
-WINDOW.blit(background, (0, 0))
-
-# loop
-last_time = time.time()
-while True:
-
-	# delta time
-	dt = time.time() - last_time
-	last_time = time.time()
-	input()
-
-	# event loop
-	for event in pg.event.get():
-		if event.type == pg.QUIT:
-			pg.quit()
-			sys.exit()
-
-	# drawing and updating the screen
-	WINDOW.blit(background, (0,0))
-	for o in Objects:
-		o.update(dt)
+def new_piece():
+    piece = random.choice(tetrominos)
+    return piece, 0, GRID_WIDTH // 2 - len(piece[0]) // 2
 
 
-	# display output
-	pg.display.update()
+def draw_piece(surface, piece, offset):
+    for y, row in enumerate(piece):
+        for x, cell in enumerate(row):
+            if cell:
+                pygame.draw.rect(surface, colors[cell], (offset[1] * BLOCK_SIZE + x * BLOCK_SIZE,
+                                                         offset[0] * BLOCK_SIZE + y * BLOCK_SIZE,
+                                                         BLOCK_SIZE, BLOCK_SIZE))
+
+
+def draw_next_piece(surface, next_piece):
+    # Calculate position to draw the next piece
+    next_piece_x = GAME_WIDTH + (SCREEN_WIDTH - GAME_WIDTH - SIDE_PANEL_WIDTH) // 2 + BLOCK_SIZE
+    next_piece_y = (SCREEN_HEIGHT - GAME_HEIGHT) // 2 + 2 * BLOCK_SIZE
+
+    # Clear the area for the next piece
+    pygame.draw.rect(surface, BLACK, (next_piece_x, next_piece_y, 4 * BLOCK_SIZE, 4 * BLOCK_SIZE))
+
+    # Draw the next piece
+    for y, row in enumerate(next_piece):
+        for x, cell in enumerate(row):
+            if cell:
+                pygame.draw.rect(surface, colors[cell], (next_piece_x + x * BLOCK_SIZE,
+                                                         next_piece_y + y * BLOCK_SIZE,
+                                                         BLOCK_SIZE, BLOCK_SIZE))
+
+
+def collide(piece, offset, grid):
+    for y, row in enumerate(piece):
+        for x, cell in enumerate(row):
+            if cell:
+                if offset[0] + y >= GRID_HEIGHT or offset[1] + x < 0 or offset[1] + x >= GRID_WIDTH or \
+                        grid[offset[0] + y][offset[1] + x]:
+                    return True
+    return False
+
+
+def merge(piece, offset, grid):
+    for y, row in enumerate(piece):
+        for x, cell in enumerate(row):
+            if cell:
+                grid[offset[0] + y][offset[1] + x] = cell
+
+
+def check_lines(grid):
+    lines = 0
+    for i, row in enumerate(grid):
+        if all(cell != 0 for cell in row):
+            del grid[i]
+            grid.insert(0, [0 for _ in range(GRID_WIDTH)])
+            lines += 1
+    return lines
+
+
+# Colors for tetrominos
+colors = {1: CYAN, 2: PURPLE, 3: GREEN, 4: RED, 5: ORANGE, 6: YELLOW, 7: DARK_BLUE}
+
+grid = [[0] * GRID_WIDTH for _ in range(GRID_HEIGHT)]
+piece, piece_y, piece_x = new_piece()
+next_piece, next_piece_y, next_piece_x = new_piece()
+game_over = False
+score = 0
+
+# Movement flags
+move_left = False
+move_right = False
+
+# Timer for continuous movement
+move_timer = 0
+MOVE_DELAY = 750  # milliseconds
+
+# Create a surface for the game area
+game_surface = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
+game_surface.fill(BLACK)
+
+while not game_over:
+    screen.fill(BLACK)
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            game_over = True
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                move_left = True
+            elif event.key == pygame.K_RIGHT:
+                move_right = True
+            elif event.key == pygame.K_UP:
+                rotated_piece = [list(row) for row in zip(*piece[::-1])]
+                if not collide(rotated_piece, (piece_y, piece_x), grid):
+                    piece = rotated_piece
+            elif event.key == pygame.K_SPACE:
+                # Instantly move the piece down
+                while not collide(piece, (piece_y + 1, piece_x), grid):
+                    piece_y += 1
+                merge(piece, (piece_y, piece_x), grid)
+                lines_cleared = check_lines(grid)
+                score += lines_cleared
+                piece, piece_y, piece_x = next_piece, next_piece_y, next_piece_x
+                next_piece, next_piece_y, next_piece_x = new_piece()
+                if collide(piece, (piece_y, piece_x), grid):
+                    game_over = True
+
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT:
+                move_left = False
+            elif event.key == pygame.K_RIGHT:
+                move_right = False
+
+    # Continuous movement
+    if move_left:
+        if not collide(piece, (piece_y, piece_x - 1), grid):
+            piece_x -= 1
+    if move_right:
+        if not collide(piece, (piece_y, piece_x + 1), grid):
+            piece_x += 1
+
+    # Move down slower
+    current_time = pygame.time.get_ticks()
+    if current_time - move_timer > MOVE_DELAY:
+        move_timer = current_time
+        if not collide(piece, (piece_y + 1, piece_x), grid):
+            piece_y += 1
+        else:
+            merge(piece, (piece_y, piece_x), grid)
+            lines_cleared = check_lines(grid)
+            score += lines_cleared
+            piece, piece_y, piece_x = next_piece, next_piece_y, next_piece_x
+            next_piece, next_piece_y, next_piece_x = new_piece()
+            if collide(piece, (piece_y, piece_x), grid):
+                game_over = True
+
+    # Draw grid and pieces on the game surface
+    game_surface.fill(BLACK)
+    draw_grid(game_surface, 0, 0)
+    draw_piece(game_surface, piece, (piece_y, piece_x))
+    for y, row in enumerate(grid):
+        for x, cell in enumerate(row):
+            if cell:
+                pygame.draw.rect(game_surface, colors[cell], (x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
+
+    # Draw the game surface onto the center of the screen
+    screen.blit(game_surface, ((SCREEN_WIDTH - GAME_WIDTH - SIDE_PANEL_WIDTH) // 2, (SCREEN_HEIGHT - GAME_HEIGHT) // 2))
+    draw_next_piece(screen, next_piece)
+
+    pygame.display.update()
+    clock.tick(30)  # Change this value for desired frame rate
+
+pygame.quit()
+print("Game Over! Your Score:", score)
