@@ -90,11 +90,15 @@ class Entity(Object):
             if o.position == self.position:
                 pass
             else:
-                if self.area[0][0] >= o.position[0] >= self.area[0][1] and self.area[1][0] >= o.position[1] >= \
-                        self.area[1][1]:
+                print(self.area)
+                print(o.area)
+                print("\n")
+                if ((self.area[0][1] >= o.area[0][0] >= self.area[0][0]) or (self.area[0][1] >= o.area[0][1] >= self.area[0][0])) and ((self.area[1][1] >= o.area[1][0] >= self.area[1][0]) or (self.area[1][1] >= o.area[1][1] >= self.area[1][0])):
                     self.directionADWS = [False, False, False, False]
                     self.velocity[0] = self.velocity[0] * -1
                     self.velocity[1] = self.velocity[1] * -1
+                    print("collision")
+
 
     def change_direction(self):
         if self.velocity[0] < 0:
@@ -159,8 +163,8 @@ class Entity(Object):
         self.x += self.velocity[0] * self.speed
         self.y += self.velocity[1] * self.speed
         self.draw()
-        self.area[0] = ((self.position[0] + self.width / 2), (self.position[0] - self.width / 2))
-        self.area[1] = ((self.position[1] + self.height / 2), (self.position[1] - self.height / 2))
+        self.area[0] = ((self.position[0] - self.width / 2), (self.position[0] + self.width / 2))
+        self.area[1] = ((self.position[1] - self.height / 2), (self.position[1] + self.height / 2))
 
 
 class Player(Entity):
@@ -239,7 +243,7 @@ def camera_shake():
 # Objects
 player1 = Player(screen_size[0] / 4, screen_size[1] / 4, 54, 84, "player_test.png", 4)
 player2 = Player(screen_size[0] * 3 / 4, screen_size[1] / 4, 54, 84, "player_test.png", 4)
-Box = Object(screen_size[0] / 2, screen_size[1] / 2, 64, 64, "Wood_box.png")
+Box = Object(screen_size[0]/2 , screen_size[1] / 2, 64, 64, "Wood_box.png")
 
 while True:
     for event in pg.event.get():
