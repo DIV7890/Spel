@@ -34,16 +34,16 @@ DARK_BLUE = (0, 0, 139)
 tetrominos = [
     [[1, 1, 1, 1]],  # I piece
     [[2, 2, 2],
-     [0, 2, 0]],  # T piece
+     [0, 2, 0]],    # T piece
     [[3, 3, 0],
-     [0, 3, 3]],  # S piece
+     [0, 3, 3]],    # S piece
     [[0, 4, 4],
-     [4, 4, 0]],  # Z piece
+     [4, 4, 0]],    # Z piece
     [[5, 5, 5, 5]],  # L piece
     [[6, 6],
-     [6, 6]],  # O piece
+     [6, 6]],       # O piece
     [[7, 7, 7],
-     [0, 0, 7]]  # J piece
+     [0, 0, 7]]     # J piece
 ]
 
 # Create a new window
@@ -53,27 +53,23 @@ pygame.display.set_caption("Tetris")
 # Initialize clock
 clock = pygame.time.Clock()
 
-
 def draw_grid(surface, x_offset, y_offset):
     for x in range(0, GAME_WIDTH, BLOCK_SIZE):
         pygame.draw.line(surface, GRAY, (x + x_offset, y_offset), (x + x_offset, GAME_HEIGHT + y_offset))
     for y in range(0, GAME_HEIGHT, BLOCK_SIZE):
         pygame.draw.line(surface, GRAY, (x_offset, y + y_offset), (GAME_WIDTH + x_offset, y + y_offset))
 
-
 def new_piece():
     piece = random.choice(tetrominos)
     return piece, 0, GRID_WIDTH // 2 - len(piece[0]) // 2
-
 
 def draw_piece(surface, piece, offset):
     for y, row in enumerate(piece):
         for x, cell in enumerate(row):
             if cell:
                 pygame.draw.rect(surface, colors[cell], (offset[1] * BLOCK_SIZE + x * BLOCK_SIZE,
-                                                         offset[0] * BLOCK_SIZE + y * BLOCK_SIZE,
-                                                         BLOCK_SIZE, BLOCK_SIZE))
-
+                                                          offset[0] * BLOCK_SIZE + y * BLOCK_SIZE,
+                                                          BLOCK_SIZE, BLOCK_SIZE))
 
 def draw_next_piece(surface, next_piece):
     # Calculate position to draw the next piece
@@ -88,26 +84,22 @@ def draw_next_piece(surface, next_piece):
         for x, cell in enumerate(row):
             if cell:
                 pygame.draw.rect(surface, colors[cell], (next_piece_x + x * BLOCK_SIZE,
-                                                         next_piece_y + y * BLOCK_SIZE,
-                                                         BLOCK_SIZE, BLOCK_SIZE))
-
+                                                          next_piece_y + y * BLOCK_SIZE,
+                                                          BLOCK_SIZE, BLOCK_SIZE))
 
 def collide(piece, offset, grid):
     for y, row in enumerate(piece):
         for x, cell in enumerate(row):
             if cell:
-                if offset[0] + y >= GRID_HEIGHT or offset[1] + x < 0 or offset[1] + x >= GRID_WIDTH or \
-                        grid[offset[0] + y][offset[1] + x]:
+                if offset[0] + y >= GRID_HEIGHT or offset[1] + x < 0 or offset[1] + x >= GRID_WIDTH or grid[offset[0] + y][offset[1] + x]:
                     return True
     return False
-
 
 def merge(piece, offset, grid):
     for y, row in enumerate(piece):
         for x, cell in enumerate(row):
             if cell:
                 grid[offset[0] + y][offset[1] + x] = cell
-
 
 def check_lines(grid):
     lines = 0
@@ -117,7 +109,6 @@ def check_lines(grid):
             grid.insert(0, [0 for _ in range(GRID_WIDTH)])
             lines += 1
     return lines
-
 
 # Colors for tetrominos
 colors = {1: CYAN, 2: PURPLE, 3: GREEN, 4: RED, 5: ORANGE, 6: YELLOW, 7: DARK_BLUE}
@@ -175,43 +166,4 @@ while not game_over:
                 move_right = False
 
     # Continuous movement
-    if move_left:
-        if not collide(piece, (piece_y, piece_x - 1), grid):
-            piece_x -= 1
-    if move_right:
-        if not collide(piece, (piece_y, piece_x + 1), grid):
-            piece_x += 1
-
-    # Move down slower
-    current_time = pygame.time.get_ticks()
-    if current_time - move_timer > MOVE_DELAY:
-        move_timer = current_time
-        if not collide(piece, (piece_y + 1, piece_x), grid):
-            piece_y += 1
-        else:
-            merge(piece, (piece_y, piece_x), grid)
-            lines_cleared = check_lines(grid)
-            score += lines_cleared
-            piece, piece_y, piece_x = next_piece, next_piece_y, next_piece_x
-            next_piece, next_piece_y, next_piece_x = new_piece()
-            if collide(piece, (piece_y, piece_x), grid):
-                game_over = True
-
-    # Draw grid and pieces on the game surface
-    game_surface.fill(BLACK)
-    draw_grid(game_surface, 0, 0)
-    draw_piece(game_surface, piece, (piece_y, piece_x))
-    for y, row in enumerate(grid):
-        for x, cell in enumerate(row):
-            if cell:
-                pygame.draw.rect(game_surface, colors[cell], (x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
-
-    # Draw the game surface onto the center of the screen
-    screen.blit(game_surface, ((SCREEN_WIDTH - GAME_WIDTH - SIDE_PANEL_WIDTH) // 2, (SCREEN_HEIGHT - GAME_HEIGHT) // 2))
-    draw_next_piece(screen, next_piece)
-
-    pygame.display.update()
-    clock.tick(30)  # Change this value for desired frame rate
-
-pygame.quit()
-print("Game Over! Your Score:", score)
+    if move
